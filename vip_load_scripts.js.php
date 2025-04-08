@@ -1,11 +1,10 @@
 <?php
 use Glpi\Event;
-include('../../inc/includes.php');
 header('Content-Type: text/javascript');
 
 ?>
 
-var root_vip_doc = "<?php echo PLUGIN_VIP_WEBDIR; ?>";
+var root_vip_doc = "<?php echo $CFG_GLPI['root_doc'] . '/plugins/vip'; ?>";
 (function ($) {
 
     $.fn.vip_load_scripts = function () {

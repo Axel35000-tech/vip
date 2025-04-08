@@ -215,13 +215,24 @@ class PluginVipProfile extends Profile {
       }
 
       //Migration old rights in new ones
-      foreach ($DB->request("SELECT `id` FROM `glpi_profiles`") as $prof) {
+       $query = array(
+           'SELECT' => 'id',
+           'FROM' => 'glpi_profiles'
+       );
+      foreach ($DB->request($query) as $prof) {
          self::migrateOneProfile($prof['id']);
       }
-      foreach ($DB->request("SELECT *
-                           FROM `glpi_profilerights` 
-                           WHERE `profiles_id`='" . $_SESSION['glpiactiveprofile']['id'] . "' 
-                              AND `name` LIKE '%plugin_vip%'") as $prof) {
+      $query = array(
+          'SELECT' => '*',
+          'FROM' => 'glpi_profilerights',
+          'WHERE' => array(
+              'AND' => array(
+                  'profiles_id' => $_SESSION['glpiactiveprofile']['id'],
+                  'name' => array('LIKE' => '%plugin_vip%')
+              )
+          ),
+      );
+      foreach ($DB->request($query) as $prof) {
          $_SESSION['glpiactiveprofile'][$prof['name']] = $prof['rights'];
       }
    }
@@ -231,11 +242,17 @@ class PluginVipProfile extends Profile {
     */
    static function changeProfile() {
       global $DB;
-
-      foreach ($DB->request("SELECT *
-                           FROM `glpi_profilerights` 
-                           WHERE `profiles_id`='" . $_SESSION['glpiactiveprofile']['id'] . "' 
-                              AND `name` LIKE '%plugin_vip%'") as $prof) {
+       $query = array(
+           'SELECT' => '*',
+           'FROM' => 'glpi_profilerights',
+           'WHERE' => array(
+               'AND' => array(
+                   'profiles_id' => $_SESSION['glpiactiveprofile']['id'],
+                   'name' => array('LIKE' => '%plugin_vip%')
+               )
+           ),
+       );
+      foreach ($DB->request($query) as $prof) {
          $_SESSION['glpiactiveprofile'][$prof['name']] = $prof['rights'];
       }
 

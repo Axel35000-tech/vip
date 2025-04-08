@@ -27,7 +27,6 @@
  --------------------------------------------------------------------------
  */
 
-include('../../../inc/includes.php');
 
 $rulecollection = new PluginVipRuleVipCollection($_SESSION['glpiactive_entity']);
 

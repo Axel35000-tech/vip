@@ -38,7 +38,7 @@ function plugin_vip_install() {
       $tables = ["glpi_plugin_vip_tickets"];
 
       foreach ($tables as $table) {
-         $DB->query("DROP TABLE IF EXISTS `$table`;");
+          $DB->dropTable($table, true);
       }
    }
 
@@ -65,7 +65,7 @@ function plugin_vip_uninstall() {
               "glpi_plugin_vip_tickets"];
 
    foreach ($tables as $table)
-      $DB->query("DROP TABLE IF EXISTS `$table`;");
+       $DB->dropTable($table, true);
 
    $tables_glpi = ["glpi_displaypreferences",
                    "glpi_documents_items",
@@ -77,7 +77,7 @@ function plugin_vip_uninstall() {
                    "glpi_dropdowntranslations"];
 
    foreach ($tables_glpi as $table_glpi)
-      $DB->query("DELETE FROM `$table_glpi` WHERE `itemtype` LIKE 'PluginVip%';");
+       $DB->delete($table_glpi, array('itemtype' => array('LIKE' => 'PluginVip%')));
 
    //drop rules
    $Rule    = new Rule();

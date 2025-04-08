@@ -27,18 +27,19 @@
  --------------------------------------------------------------------------
  */
 
+use Glpi\Plugin\Hooks;
+
 define('PLUGIN_VIP_VERSION', '1.8.1');
 
 if (!defined("PLUGIN_VIP_DIR")) {
    define("PLUGIN_VIP_DIR", Plugin::getPhpDir("vip"));
    define("PLUGIN_VIP_NOTFULL_DIR", Plugin::getPhpDir("vip",false));
-   define("PLUGIN_VIP_WEBDIR", Plugin::getWebDir("vip"));
 }
 
 // Init the hooks of the plugins -Needed
 function plugin_init_vip() {
 
-   global $PLUGIN_HOOKS;
+   global $PLUGIN_HOOKS, $CFG_GLPI;
 
    $PLUGIN_HOOKS['csrf_compliant']['vip'] = true;
 
@@ -59,16 +60,12 @@ function plugin_init_vip() {
    && isset($_SESSION["glpiactiveprofile"]["interface"])
    && $_SESSION["glpiactiveprofile"]["interface"] != "helpdesk") {
 
-      $PLUGIN_HOOKS['add_javascript']['vip'][] = 'vip.js.php';
-      $PLUGIN_HOOKS["javascript"]['vip']     = [PLUGIN_VIP_NOTFULL_DIR."/vip.js.php"];
+      $PLUGIN_HOOKS[Hooks::ADD_JAVASCRIPT]['vip'][] = 'vip.js.php';
 
       if (class_exists('PluginVipTicket')) {
          foreach (PluginVipTicket::$types as $item) {
             if (isset($_SERVER['REQUEST_URI']) && strpos($_SERVER['REQUEST_URI'], strtolower($item) . ".form.php") !== false) {
-               $PLUGIN_HOOKS['add_javascript']['vip'][] = 'vip_load_scripts.js.php';
-               $PLUGIN_HOOKS['javascript']['vip']       = [
-                  PLUGIN_VIP_NOTFULL_DIR. "/vip_load_scripts.js.php",
-               ];
+               $PLUGIN_HOOKS[Hooks::ADD_JAVASCRIPT]['vip'][] = 'vip_load_scripts.js.php';
             }
          }
       }
@@ -94,8 +91,8 @@ function plugin_version_vip() {
            'homepage'       => 'https://github.com/InfotelGLPI/vip',
            'requirements'   => [
               'glpi' => [
-                 'min' => '10.0',
-                 'max' => '11.0',
+                 'min' => '11.0',
+                 'max' => '12.0',
                  'dev' => false
               ]
            ]

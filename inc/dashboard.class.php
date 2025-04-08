@@ -68,19 +68,53 @@ class PluginVipDashboard extends CommonGLPI {
                $groups[] = $mygroup["id"];
             }
 
-            $query = "SELECT  `glpi_tickets`.`id` AS tickets_id, 
-                                 `glpi_tickets`.`status` AS status, 
-                                 `glpi_tickets`.`time_to_resolve` AS time_to_resolve
-                        FROM `glpi_tickets`
-                        LEFT JOIN `glpi_entities` ON (`glpi_tickets`.`entities_id` = `glpi_entities`.`id`)
-                        LEFT JOIN `glpi_groups_tickets` ON (`glpi_tickets`.`id` = `glpi_groups_tickets`.`tickets_id` 
-                                                            AND `glpi_groups_tickets`.`type` = " . CommonITILActor::ASSIGN . ")
-                        WHERE `glpi_tickets`.`is_deleted` = '0' 
-                              AND `glpi_tickets`.`status` NOT IN (" . CommonITILObject::INCOMING . "," . CommonITILObject::SOLVED . "," . CommonITILObject::CLOSED . ") ";
+            $query = array(
+                'SELECT' => array(
+                    'glpi_tickets.id AS tickets_id',
+                    'glpi_tickets.status AS status',
+                    'glpi_tickets.time_to_resolve AS time_to_resolve'
+                ),
+                'FROM' => 'glpi_tickets',
+                'LEFT JOIN' => array(
+                    'glpi_entities' => array(
+                        'ON' => array(
+                            'glpi_tickets' => 'entities_id',
+                            'glpi_entities' => 'id'
+                        )
+                    ),
+                    'glpi_groups_tickets' => array(
+                        'ON' =>  array(
+                            'glpi_tickets' => 'id',
+                            'glpi_groups_tickets' => 'tickets_id'
+                        ),
+                        'AND' => array(
+                            'glpi_groups_tickets.type' => CommonITILActor::ASSIGN
+                        )
+                    )
+                ),
+                'WHERE' => array(
+                    'AND' => array(
+                        'glpi_tickets.is_deleted' => '0',
+                        'glpi_tickets.status' => array(
+                            'NOT IN' => array(
+                                CommonITILObject::INCOMING,
+                                CommonITILObject::SOLVED,
+                                CommonITILObject::CLOSED,
+                            )
+                        )
+                    )
+                ),
+                'ORDER BY' => array(
+                    'glpi_tickets.time_to_resolve DESC'
+                )
+            );
+
+
             if (count($groups) > 0) {
-               $query .= "AND `glpi_groups_tickets`.`groups_id` IN (" . implode(",", $groups) . ")";
+                $query['WHERE']['AND'][] = ['glpi_groups_tickets.groups_id' => array(
+                    'IN' => $groups
+                )];
             }
-            $query .= "ORDER BY `glpi_tickets`.`time_to_resolve` DESC";//
 
             $widget  = PluginMydashboardHelper::getWidgetsFromDBQuery('table', $query);
             $headers = [__('ID'),
@@ -90,29 +124,28 @@ class PluginVipDashboard extends CommonGLPI {
                         __('Assigned to technicians')];
             $widget->setTabNames($headers);
 
-            $result = $DB->query($query);
-            $nb     = $DB->numrows($result);
+            $result = $DB->request($query);
+            $nb     = $result->numrows();
 
             $datas   = [];
             $tickets = [];
 
             if ($nb) {
-               while ($data = $DB->fetchAssoc($result)) {
-
-                  $ticket = new Ticket();
-                  $ticket->getFromDB($data['tickets_id']);
-                  if ($ticket->countUsers(CommonITILActor::REQUESTER)) {
-                     $users = [];
-                     foreach ($ticket->getUsers(CommonITILActor::REQUESTER) as $u) {
-                        $users[] = $u['users_id'];
-                     }
-                     foreach ($users as $key => $val) {
-                        if (PluginVipTicket::isUserVip($val) !== false) {
-                           $tickets[] = $data;
+                foreach ($result as $data) {
+                    $ticket = new Ticket();
+                    $ticket->getFromDB($data['tickets_id']);
+                    if ($ticket->countUsers(CommonITILActor::REQUESTER)) {
+                        $users = [];
+                        foreach ($ticket->getUsers(CommonITILActor::REQUESTER) as $u) {
+                            $users[] = $u['users_id'];
                         }
-                     }
-                  }
-               }
+                        foreach ($users as $key => $val) {
+                            if (PluginVipTicket::isUserVip($val) !== false) {
+                                $tickets[] = $data;
+                            }
+                        }
+                    }
+                }
                $i = 0;
 
                foreach ($tickets as $key => $val) {

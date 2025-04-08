@@ -44,19 +44,31 @@ class PluginVipTicket extends CommonDBTM {
       global $DB;
 
       if ($uid) {
-         $vipquery = "SELECT `glpi_plugin_vip_groups`.`id`
-                   FROM `glpi_groups_users`
-                   LEFT JOIN `glpi_plugin_vip_groups`
-                     ON `glpi_plugin_vip_groups`.`id` = `glpi_groups_users`.`groups_id`
-                   WHERE `glpi_plugin_vip_groups`.`isvip` = 1
-                   AND `glpi_groups_users`.`users_id` = " . $uid;
 
-         $result = $DB->query($vipquery);
-         $nb     = $DB->numrows($result);
-         if ($nb > 0) {
-            while ($uids = $DB->fetchArray($result)) {
-               return $uids['id'];
-            }
+          $vipquery = array(
+              'SELECT' => 'glpi_plugin_vip_groups.id',
+              'FROM'   => 'glpi_groups_users',
+              'LEFT JOIN'       => array(
+                  'glpi_plugin_vip_groups' => array(
+                      'ON' => array(
+                          'glpi_groups_users' => 'groups_id',
+                          'glpi_plugin_vip_groups' => 'id'
+                      )
+                  )
+              ),
+              'WHERE'  => array(
+                  'AND' => array(
+                      'glpi_plugin_vip_groups.isvip' => 1,
+                      'glpi_groups_users.users_id' => $uid,
+                  )
+              )
+          );
+
+         $result = $DB->request($vipquery);
+         if ($result->numrows() > 0) {
+             foreach ($result as $row) {
+                 return $row['id'];
+             }
          }
       }
 
@@ -72,17 +84,26 @@ class PluginVipTicket extends CommonDBTM {
       global $DB;
 
       $vip      = [];
-      $vipquery = "SELECT `glpi_groups_users`.`users_id`
-                   FROM `glpi_groups_users`
-                   LEFT JOIN `glpi_plugin_vip_groups`
-                     ON `glpi_plugin_vip_groups`.`id` = `glpi_groups_users`.`groups_id`
-                   WHERE `glpi_plugin_vip_groups`.`isvip` = 1";
+       $vipquery = array(
+           'SELECT' => 'glpi_groups_users.users_id',
+           'FROM'   => 'glpi_tickets_users',
+           'LEFT JOIN'       => array(
+               'glpi_plugin_vip_groups' => array(
+                   'ON' => array(
+                       'glpi_groups_users' => 'groups_id',
+                       'glpi_plugin_vip_groups' => 'id'
+                   )
+               )
+           ),
+           'WHERE'  => array(
+                   'glpi_plugin_vip_groups.isvip' => 1
+           )
+       );
 
-      $result = $DB->query($vipquery);
-      $nb     = $DB->numrows($result);
-      if ($nb > 0) {
-         while ($uids = $DB->fetchArray($result)) {
-            $vip[] = $uids['users_id'];
+      $result = $DB->request($vipquery);
+      if ($result->numrows() > 0) {
+         foreach ($result as $row) {
+             $vip[] = $row['users_id'];
          }
       }
       return $vip;
@@ -97,20 +118,24 @@ class PluginVipTicket extends CommonDBTM {
       global $DB;
 
       if ($ticketid > 0) {
-         $userquery  = "SELECT `users_id`
-                        FROM `glpi_tickets_users`
-                        WHERE `type` = " . CommonITILActor::REQUESTER . "
-                        AND `tickets_id` = " . $ticketid;
-         $userresult = $DB->query($userquery);
-         $nb     = $DB->numrows($userresult);
-         if ($nb > 0) {
-            while ($uids = $DB->fetchArray($userresult)) {
-               $isuservip = self::isUserVip($uids['users_id']);
-               if ($isuservip > 0) {
-                  return $isuservip;
-               }
-
-            }
+          $userquery = array(
+              'SELECT' => 'users_id',
+              'FROM'   => 'glpi_tickets_users',
+              'WHERE'  => array(
+                  'AND' => array(
+                      'tickets_id' => $ticketid,
+                      'type' => CommonITILActor::REQUESTER
+                  )
+              )
+          );
+         $userresult = $DB->request($userquery);
+         if ($userresult->numrows()) {
+             foreach ($userresult as $user) {
+                 $isuservip = self::isUserVip($user['users_id']);
+                 if ($isuservip > 0) {
+                     return $isuservip;
+                 }
+             }
          }
       }
       return false;
